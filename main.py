@@ -1,27 +1,17 @@
 # main.py
-# Archivo principal: importa las piezas del paquete blog y coordina el flujo del menú.
+# Punto de entrada: carga los posts desde posts.json, crea el objeto Blog
+# y llama a la acción que corresponde a cada opción del menú.
 
-from blog.datos import posts
-from blog.menu import mostrar_menu, pedir_texto
-from blog.operaciones import listar_posts, buscar_por_titulo, filtrar_por_tag, mostrar_resultados
-from blog.validaciones import validar_post
-
-
-def mostrar_validacion(lista):
-    """Usa validar_post() en cada post y muestra cuáles son válidos y cuáles tienen errores."""
-    print("\nResultado de la validación:")
-    for posicion, post in enumerate(lista, start=1):
-        es_valido, mensaje = validar_post(post)
-        # Si el post no es un diccionario o no tiene id, se usa su posición en la lista
-        identificador = post.get("id", posicion) if isinstance(post, dict) else posicion
-        if es_valido:
-            print(f"Post {identificador}: válido")
-        else:
-            print(f"Post {identificador}: error - {mensaje}")
+from blog.modelos import Blog
+from blog.datos import cargar_posts, guardar_posts
+from blog.menu import mostrar_menu, pedir_si_no
+from blog.operaciones import accion_listar, accion_buscar, accion_filtrar, accion_crear, accion_validar
 
 
 def ejecutar():
-    """Mantiene el menú activo y llama a la función que corresponde a cada opción."""
+    """Crea el blog con los posts cargados y mantiene el menú activo hasta salir."""
+    blog = Blog("Blog de Ana", cargar_posts())
+
     while True:
         opcion = mostrar_menu()
 
@@ -30,32 +20,23 @@ def ejecutar():
             continue
 
         if opcion == 1:
-            listar_posts(posts)
-
+            accion_listar(blog)
         elif opcion == 2:
-            termino = pedir_texto("Buscar por titulo: ")
-            if termino == "":
-                print("La búsqueda no puede estar vacía.")
-            else:
-                resultados = buscar_por_titulo(posts, termino)
-                mostrar_resultados(resultados, f"No se encontraron posts con '{termino}' en el título.")
-
+            accion_buscar(blog)
         elif opcion == 3:
-            tag = pedir_texto("Ingresá un tag: ")
-            if tag == "":
-                print("El tag no puede estar vacío.")
-            else:
-                resultados = filtrar_por_tag(posts, tag)
-                mostrar_resultados(resultados, f"No hay posts con el tag '{tag}'.")
-
+            accion_filtrar(blog)
         elif opcion == 4:
-            mostrar_validacion(posts)
-
+            accion_crear(blog)
         elif opcion == 5:
+            accion_validar(blog)
+        elif opcion == 6:
+            guardar_posts(blog)
+        elif opcion == 7:
+            # Si hay cambios sin guardar, se ofrece guardarlos antes de salir
+            if blog.cambios_sin_guardar and pedir_si_no("Hay cambios sin guardar. ¿Guardarlos antes de salir? (s/n): "):
+                guardar_posts(blog)
             print("Gracias por usar el sistema del blog. ¡Hasta luego!")
             break
-
-        # Número fuera del rango del menú
         else:
             print("Opción inválida, intenta de nuevo")
 
